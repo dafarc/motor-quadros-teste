@@ -33,7 +33,7 @@ Sem as três variáveis do Supabase o sistema não sobe. Nenhuma chave fica no r
 
 ## Banco
 
-1. Num projeto Supabase novo e vazio, rode `infra/migrations/0001_esquema_inicial.sql`.
+1. Num projeto Supabase novo e vazio, rode `infra/migrations/0001_esquema_inicial.sql` e depois `0002_endurecimento_supabase.sql`. (Já feito no projeto de teste `motor-quadros-teste`, em São Paulo.)
 2. Edite o nome e o domínio em `infra/seeds/0001_empresa.sql` e rode.
 3. Configure o login com Google no painel do Supabase (Authentication → Providers).
 4. O primeiro usuário interno que entrar vira Gestor.

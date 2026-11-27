@@ -20,9 +20,9 @@
 
 **Decisão.** Remover de vez, ou renomear para "devoluções" e usar na recusa da aprovação por etapa (fase 1). Recomendação: reaproveitar.
 
-### 3. Região do banco de teste
+### 3. Banco de teste: resolvido em 27/11
 
-O projeto `motor-quadros-teste` no Supabase foi criado em Oregon (us-west-2), não em São Paulo. A região não muda depois. **O esquema ainda não foi aplicado nele**, justamente por isso: se for recriar em São Paulo, é melhor aplicar só uma vez. Decisão: recriar ou manter.
+O David recriou o `motor-quadros-teste` em São Paulo. O esquema (`0001`) e o endurecimento (`0002`) foram aplicados: 31 tabelas, todas com separação por empresa, 31 regras de acesso, 6 tabelas em tempo real e o balde de imagens. Visitante sem login não lê nenhuma tabela e o navegador logado não grava em nenhuma. A checagem de segurança do Supabase deixou 7 avisos, esperados: são as funções que as próprias regras de acesso usam. A semente da empresa ainda não rodou (item 8).
 
 ### 4. Repositório público
 
@@ -55,13 +55,13 @@ Herdado da origem: as imagens coladas na descrição de um cartão vão para um 
 
 ### 9. Nenhuma tela foi aberta
 
-O que foi conferido: os tipos de todo o código e os 51 testes do núcleo. O que **não** foi conferido: nenhuma tela, nenhum clique. Abrir o sistema depende do item 8. O `next build` também não foi concluído no ambiente de extração, porque ele bloqueia o endereço das fontes do Google; isso não indica erro no código, mas o build segue sem prova.
+O que foi conferido: os tipos de todo o código e os 51 testes do núcleo. O que **não** foi conferido: nenhuma tela, nenhum clique. Abrir o sistema depende do item 8; o banco já está pronto. O `next build` também não foi concluído no ambiente de extração, porque ele bloqueia o endereço das fontes do Google; isso não indica erro no código, mas o build segue sem prova.
 
 Critérios da passagem ainda sem prova: criar empresa e quadros pelos modelos; criar, mover, renomear e arquivar cartão; histórico, comentários e checklists; Kanban, Lista e "apenas os meus" no computador e no celular; um usuário de uma empresa não abrir cartão de outra.
 
 ### 10. Medição de velocidade
 
-`docs/MEDICAO.md` não existe ainda. Depende do sistema rodando com banco (itens 3 e 8).
+`docs/MEDICAO.md` não existe ainda. Depende do sistema rodando (item 8).
 
 ### 11. Restos de texto da origem
 
