@@ -32,7 +32,7 @@ begin
         'card:move','card:assign','comment:create','channel:read','channel:post','channel:manage',
         'field:manage','stage:manage','user:manage','workflow:manage','report:read','time:read','card:read_all']),
       ('Gestor Master', 'master', array['board:read','board:configure','card:read','card:create','card:update',
-        'card:move','card:assign','comment:create','channel:read','channel:post','channel:manage',
+        'card:move','card:assign','card:transfer','comment:create','channel:read','channel:post','channel:manage',
         'field:manage','stage:manage','workflow:manage','user:manage','role:manage','report:read',
         'time:read','card:read_all'])
     ) as t(nome, slug, perms)
