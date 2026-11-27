@@ -1,0 +1,39 @@
+"use client";
+
+import type { ComponentType } from "react";
+
+import type { FieldDef } from "@/lib/board/types";
+
+/** Props que todo formulário de criação personalizado recebe. */
+export interface CustomFormProps {
+  boardId: string;
+  onClose: () => void;
+  onCreated: (cardId: string) => void;
+  /** A gravação começou (dados já validados): o quadro mostra o card na hora. */
+  onSaving?: (title: string) => void;
+  /** A gravação falhou: o formulário volta à tela, com o erro e o que foi digitado. */
+  onFailed?: () => void;
+  /**
+   * Campos resolvidos no servidor, para a caixa de entrada (quem abre o
+   * formulário sem enxergar o pipeline). Quando ausente, o formulário busca
+   * sozinho. Todo formulário personalizado novo deve respeitar isto — é o que
+   * o torna utilizável por quem pede algo de fora da área.
+   */
+  initialFields?: FieldDef[];
+}
+
+/**
+ * Registro de formulários de criação PERSONALIZADOS, por chave. O modo do
+ * pipeline `custom:<chave>` seleciona um destes. Para adicionar um novo:
+ * criar o componente e registrá-lo aqui — o seletor de modo mostra sozinho.
+ */
+export const CUSTOM_FORMS: Record<
+  string,
+  { label: string; Component: ComponentType<CustomFormProps> }
+> = {
+};
+
+/** Rótulo amigável de um form personalizado (ou null se a chave não existe). */
+export function customFormLabel(key: string): string | null {
+  return CUSTOM_FORMS[key]?.label ?? null;
+}

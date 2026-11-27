@@ -1,0 +1,31 @@
+// Configuração do Cloudflare Workers para o apps/web (Next.js via OpenNext).
+// Segredos (SUPABASE_SECRET_KEY) NÃO ficam aqui: são cadastrados no painel do
+// Cloudflare (Worker → Settings → Variables and Secrets).
+// Nada foi publicado ainda: confira o nome do Worker e as variáveis antes do primeiro deploy.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "motor-quadros-teste",
+  "main": ".open-next/worker.js",
+  "workers_dev": true,
+  "preview_urls": true,
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "motor-quadros-teste"
+    }
+  ],
+  // Variáveis não secretas (lidas em tempo de execução). Preencher antes do deploy.
+  "vars": {
+    "INTERNAL_EMAIL_DOMAIN": "",
+    "APP_URL": ""
+  },
+  "observability": {
+    "enabled": true
+  }
+}

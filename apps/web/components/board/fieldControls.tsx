@@ -1,0 +1,492 @@
+"use client";
+
+import {
+  AlignLeft,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  CheckSquare,
+  CircleDot,
+  Hash,
+  Link as LinkIcon,
+  ListChecks,
+  Lock,
+  Type,
+  User,
+  type LucideIcon,
+} from "lucide-react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+
+import {
+  addField,
+  deleteField,
+  moveField,
+  toggleFieldOnCard,
+  updateField,
+} from "@/lib/board/actions";
+import type { FieldDef, FieldType, FieldValueRaw, MemberOption } from "@/lib/board/types";
+import { useBoardId } from "./BoardContext";
+import { WrapSelect, WrapText } from "./cells";
+
+const TYPES: { type: FieldType; label: string; Icon: LucideIcon }[] = [
+  { type: "text", label: "Texto", Icon: Type },
+  { type: "long_text", label: "Texto longo", Icon: AlignLeft },
+  { type: "number", label: "Número", Icon: Hash },
+  { type: "status", label: "Status", Icon: CircleDot },
+  { type: "select", label: "Seleção", Icon: ListChecks },
+  { type: "member", label: "Pessoa", Icon: User },
+  { type: "checkbox", label: "Caixa de seleção", Icon: CheckSquare },
+  { type: "date", label: "Data", Icon: Calendar },
+  { type: "link", label: "Link", Icon: LinkIcon },
+];
+
+const OPTION_COLORS = ["#1d4ed8", "#047857", "#b45309", "#ba1a1a", "#7c3aed", "#0891b2"];
+
+/** Como o valor aparece quando o usuário não tem alçada para editá-lo. */
+function displayValue(
+  field: FieldDef,
+  value: FieldValueRaw | undefined,
+  members: MemberOption[],
+): string {
+  if (!value) return "—";
+  switch (field.type) {
+    case "checkbox":
+      return value.bool ? "Sim" : "Não";
+    case "number":
+      return value.number != null ? String(value.number) : "—";
+    case "date":
+      return value.date ?? "—";
+    case "select":
+    case "status":
+      return field.options.find((o) => o.id === value.text)?.label ?? "—";
+    case "member":
+      return members.find((m) => m.id === value.memberId)?.name ?? "—";
+    default:
+      return value.text || "—";
+  }
+}
+
+export function FieldEditor({
+  field,
+  value,
+  members,
+  onSave,
+  live = false,
+  readOnly = false,
+  compact = false,
+}: {
+  field: FieldDef;
+  value: FieldValueRaw | undefined;
+  members: MemberOption[];
+  onSave: (value: string | number | boolean | null, patch: Partial<FieldValueRaw>) => void;
+  /** true = campos de texto/número reagem no onChange (controlado), p/ formulários de criação. */
+  live?: boolean;
+  /** Sem alçada para editar esta propriedade — mostra o valor com cadeado. */
+  readOnly?: boolean;
+  /** Célula de tabela: tudo em uma linha só, para não esticar a altura da linha. */
+  compact?: boolean;
+}) {
+  const cls =
+    "w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-neutral-200 focus:border-neutral-400";
+
+  if (readOnly) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-1 py-0.5 text-sm text-neutral-500"
+        title="Você não tem alçada para alterar esta propriedade."
+      >
+        {field.type === "checkbox" ? (
+          <input type="checkbox" checked={value?.bool ?? false} disabled className="h-4 w-4 rounded border-neutral-300" />
+        ) : (
+          <span className={compact ? "whitespace-normal break-words" : "truncate"}>{displayValue(field, value, members)}</span>
+        )}
+        <Lock className="h-3 w-3 shrink-0 text-neutral-500" />
+      </span>
+    );
+  }
+
+  switch (field.type) {
+    case "long_text":
+      // Na Lista o texto quebra linha e a linha cresce: nada fica escondido.
+      if (compact) {
+        return (
+          <WrapText
+            key={value?.text ?? ""}
+            defaultValue={value?.text ?? ""}
+            onBlur={(e) => onSave(e.target.value, { text: e.target.value || null })}
+          />
+        );
+      }
+      return (
+        <textarea
+          {...(live
+            ? { value: value?.text ?? "", onChange: (e) => onSave(e.target.value, { text: e.target.value || null }) }
+            : { defaultValue: value?.text ?? "", onBlur: (e) => onSave(e.target.value, { text: e.target.value || null }) })}
+          rows={3}
+          className={cls + " resize-y"}
+        />
+      );
+    case "checkbox":
+      return (
+        <input
+          type="checkbox"
+          checked={value?.bool ?? false}
+          onChange={(e) => onSave(e.target.checked, { bool: e.target.checked })}
+          className="h-4 w-4 rounded border-neutral-300"
+        />
+      );
+    case "number":
+      return (
+        <input
+          type="number"
+          {...(live
+            ? { value: value?.number ?? "", onChange: (e) => onSave(e.target.value, { number: e.target.value === "" ? null : Number(e.target.value) }) }
+            : { defaultValue: value?.number ?? "", onBlur: (e) => onSave(e.target.value, { number: e.target.value === "" ? null : Number(e.target.value) }) })}
+          className={cls}
+        />
+      );
+    case "date":
+      return (
+        <input
+          type="date"
+          value={value?.date ?? ""}
+          onChange={(e) => onSave(e.target.value, { date: e.target.value || null })}
+          className={cls}
+        />
+      );
+    case "select":
+    case "status":
+      if (compact) {
+        return (
+          <WrapSelect
+            value={value?.text ?? ""}
+            label={field.options.find((o) => o.id === value?.text)?.label ?? "—"}
+            onChange={(v) => onSave(v, { text: v || null })}
+            ariaLabel={field.name}
+          >
+            <option value="">—</option>
+            {field.options.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </WrapSelect>
+        );
+      }
+      return (
+        <select
+          value={value?.text ?? ""}
+          onChange={(e) => onSave(e.target.value, { text: e.target.value || null })}
+          className={cls + " pr-6"}
+        >
+          <option value="">—</option>
+          {field.options.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      );
+    case "member":
+      if (compact) {
+        return (
+          <WrapSelect
+            value={value?.memberId ?? ""}
+            label={members.find((m) => m.id === value?.memberId)?.name ?? "—"}
+            onChange={(v) => onSave(v, { memberId: v || null })}
+            ariaLabel={field.name}
+          >
+            <option value="">—</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </WrapSelect>
+        );
+      }
+      return (
+        <select
+          value={value?.memberId ?? ""}
+          onChange={(e) => onSave(e.target.value, { memberId: e.target.value || null })}
+          className={cls + " pr-6"}
+        >
+          <option value="">—</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      );
+    default:
+      if (compact && !live) {
+        return (
+          <WrapText
+            key={value?.text ?? ""}
+            defaultValue={value?.text ?? ""}
+            onBlur={(e) => onSave(e.target.value, { text: e.target.value || null })}
+            placeholder={field.type === "link" ? "https://…" : ""}
+          />
+        );
+      }
+      return (
+        <input
+          type="text"
+          {...(live
+            ? { value: value?.text ?? "", onChange: (e) => onSave(e.target.value, { text: e.target.value || null }) }
+            : { defaultValue: value?.text ?? "", onBlur: (e) => onSave(e.target.value, { text: e.target.value || null }) })}
+          placeholder={field.type === "link" ? "https://…" : ""}
+          className={cls}
+        />
+      );
+  }
+}
+
+export function FieldMenu({ field, onChanged }: { field: FieldDef; onChanged: () => void }) {
+  const boardId = useBoardId();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+
+  function openMenu() {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setAnchor({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    setEditing(false);
+    setOpen(true);
+  }
+  function close() {
+    setOpen(false);
+    setEditing(false);
+  }
+
+  // Popover num portal com posição fixed → escapa do overflow da tabela.
+  function Popover({ children }: { children: ReactNode }) {
+    if (!open || !anchor) return null;
+    return createPortal(
+      <>
+        <div className="fixed inset-0 z-[60]" onClick={close} />
+        <div className="fixed z-[61]" style={{ top: anchor.top, right: anchor.right }}>
+          {children}
+        </div>
+      </>,
+      document.body,
+    );
+  }
+
+  return (
+    <span className="inline-block">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => (open ? close() : openMenu())}
+        className="rounded px-1 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-700"
+        aria-label="Opções da propriedade"
+      >
+        ⋯
+      </button>
+
+      <Popover>
+        {editing ? (
+          <PropertyForm
+            initial={{
+              name: field.name,
+              type: field.type,
+              optionsText: field.options.map((o) => o.label).join("\n"),
+              colors: field.options.map((o) => o.color),
+              global: field.global,
+            }}
+            submitLabel="Salvar"
+            onClose={close}
+            onSubmit={async (name, type, options, global) => {
+              await updateField(field.id, name, type, options, { global, boardId });
+              close();
+              onChanged();
+            }}
+          />
+        ) : (
+          <div className="w-52 rounded-lg border border-neutral-200 bg-white py-1 text-sm shadow-lg">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="block w-full px-3 py-1.5 text-left text-neutral-700 hover:bg-neutral-50"
+            >
+              Editar propriedade
+            </button>
+            <div className="my-1 border-t border-neutral-100" />
+            <button
+              type="button"
+              onClick={async () => {
+                close();
+                await moveField(boardId, field.id, "left");
+                onChanged();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-neutral-700 hover:bg-neutral-50"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 text-neutral-600" /> Mover para a esquerda
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                close();
+                await moveField(boardId, field.id, "right");
+                onChanged();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-neutral-700 hover:bg-neutral-50"
+            >
+              <ArrowRight className="h-3.5 w-3.5 text-neutral-600" /> Mover para a direita
+            </button>
+            <div className="my-1 border-t border-neutral-100" />
+            <button
+              type="button"
+              onClick={async () => {
+                close();
+                await toggleFieldOnCard(field.id, !field.showOnCardFace);
+                onChanged();
+              }}
+              className="block w-full px-3 py-1.5 text-left text-neutral-700 hover:bg-neutral-50"
+            >
+              {field.showOnCardFace ? "Ocultar do card" : "Mostrar no card"}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                close();
+                await deleteField(field.id);
+                onChanged();
+              }}
+              className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-red-50"
+            >
+              Remover propriedade
+            </button>
+          </div>
+        )}
+      </Popover>
+    </span>
+  );
+}
+
+/** Formulário compartilhado por AddProperty e EditProperty (nome, tipo, opções). */
+function PropertyForm({
+  initial,
+  submitLabel,
+  onClose,
+  onSubmit,
+}: {
+  initial?: { name: string; type: FieldType; optionsText: string; colors?: string[]; global?: boolean };
+  submitLabel: string;
+  onClose: () => void;
+  onSubmit: (
+    name: string,
+    type: FieldType,
+    options: { label: string; color: string }[] | undefined,
+    global: boolean,
+  ) => Promise<void>;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [type, setType] = useState<FieldType>(initial?.type ?? "text");
+  const [optionsText, setOptionsText] = useState(initial?.optionsText ?? "");
+  const [global, setGlobal] = useState(initial?.global ?? false);
+  const [pending, setPending] = useState(false);
+
+  const needsOptions = type === "select" || type === "status";
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setPending(true);
+    const options = needsOptions
+      ? optionsText
+          .split(/\n/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((label, i) => ({
+            label,
+            color: initial?.colors?.[i] ?? OPTION_COLORS[i % OPTION_COLORS.length]!,
+          }))
+      : undefined;
+    try {
+      await onSubmit(name, type, options, global);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Nome da propriedade"
+        className="w-full rounded-lg border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-500"
+      />
+      <div className="mt-2 grid grid-cols-4 gap-1">
+        {TYPES.map(({ type: t, label, Icon }) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setType(t)}
+            className={
+              "flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-xs " +
+              (type === t
+                ? "border-primary bg-white text-primary"
+                : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300")
+            }
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+      {needsOptions && (
+        <textarea
+          value={optionsText}
+          onChange={(e) => setOptionsText(e.target.value)}
+          rows={4}
+          placeholder="Uma opção por linha"
+          className="mt-2 w-full resize-y rounded-lg border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-500"
+        />
+      )}
+      <label className="mt-2 flex items-start gap-2 text-xs text-neutral-600">
+        <input
+          type="checkbox"
+          checked={global}
+          onChange={(e) => setGlobal(e.target.checked)}
+          className="mt-0.5 h-3.5 w-3.5 rounded border-neutral-300"
+        />
+        <span>
+          <span className="font-medium">Global</span> — aparece em todos os pipelines
+        </span>
+      </label>
+      <div className="mt-3 flex justify-end gap-2">
+        <button type="button" onClick={onClose} className="text-sm text-neutral-500 hover:text-neutral-800">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-primary px-3 py-1 text-sm font-medium text-white hover:bg-primary-high disabled:opacity-60"
+        >
+          {submitLabel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function AddProperty({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+  const boardId = useBoardId();
+  return (
+    <PropertyForm
+      submitLabel="Criar"
+      onClose={onClose}
+      onSubmit={async (name, type, options, global) => {
+        await addField(boardId, name, type, options, global);
+        onAdded();
+      }}
+    />
+  );
+}

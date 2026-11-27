@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    // Imports internos usam extensão .ts explícita para rodar nativamente no
+    // Node 24 (type-stripping, sem tsx/esbuild). Permitido porque é noEmit.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*"]
+}

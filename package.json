@@ -1,0 +1,23 @@
+{
+  "name": "motor-quadros",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Motor de quadros: kanban de processos (nome de trabalho). Extraído do sistema_gestao.",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @motor/web dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.110.0",
+    "@types/node": "^22.10.0",
+    "pg": "^8.22.0",
+    "typescript": "^5.7.2"
+  }
+}

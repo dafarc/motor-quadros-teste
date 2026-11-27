@@ -1,0 +1,198 @@
+"use client";
+
+import clsx from "clsx";
+import {
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  KanbanSquare,
+  LayoutDashboard,
+  LogOut,
+  MessagesSquare,
+  School,
+  Settings,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+
+import { NotificationBell } from "./NotificationBell";
+import { useSidebar } from "./SidebarContext";
+import { UnreadBadge } from "./UnreadBadge";
+import { APP_NAME } from "@/lib/brand";
+
+interface MenuItem {
+  Icon: LucideIcon;
+  label: string;
+  /** Outros caminhos que também acendem este item. */
+  match?: string[];
+  href: string;
+  disabled?: boolean;
+  /** Item que só aparece para quem tem o acesso correspondente. */
+  needs?: keyof MenuAccess;
+}
+
+/** O que a pessoa logada pode abrir (calculado no servidor, no layout). */
+export interface MenuAccess {
+  painel: boolean;
+  salas: boolean;
+  novos: boolean;
+}
+
+const MENU: MenuItem[] = [
+  { Icon: LayoutDashboard, label: "Início", href: "/" },
+  { Icon: KanbanSquare, label: "Quadro", href: "/board" },
+  { Icon: MessagesSquare, label: "Conversas", href: "/canais" },
+  { Icon: Settings, label: "Configurações", href: "/configuracoes" },
+];
+
+export function Sidebar({
+  user,
+  access = { painel: true, salas: true, novos: true },
+}: {
+  user: { email: string; name?: string | null; internal: boolean } | null;
+  access?: MenuAccess;
+}) {
+  const pathname = usePathname();
+  // No celular este menu abre pelo botão "Menu" da barra inferior (BottomNav).
+  const { collapsed, toggle, mobileOpen, setMobileOpen } = useSidebar();
+
+  useEffect(() => setMobileOpen(false), [pathname, setMobileOpen]);
+
+  const showLabels = mobileOpen || !collapsed;
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const displayName = user?.name?.trim() || user?.email || "";
+  const initials = displayName.slice(0, 2).toUpperCase() || "??";
+
+  return (
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={clsx(
+          "fixed left-0 top-0 z-[105] h-dvh bg-brand text-white shadow-lg transition-[width] duration-200",
+          mobileOpen ? "w-60 translate-x-0" : "-translate-x-full md:translate-x-0",
+          collapsed ? "md:w-16" : "md:w-60",
+        )}
+      >
+        {/* Toggle desktop */}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          className="absolute -right-3 top-6 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-brand/10 bg-white text-brand shadow-md hover:bg-brand/5 md:flex"
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
+        {/* Fechar (só no celular, onde o menu cobre a tela) */}
+        {mobileOpen && (
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Fechar menu"
+            className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-lg text-white/80 hover:bg-white/10 md:hidden"
+          >
+            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+
+        <div className="flex h-full flex-col py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Logo */}
+          <div className={clsx("mb-4 flex h-11 items-center", showLabels ? "px-3" : "justify-center px-2")}>
+            <span className="truncate text-base font-semibold text-white">{showLabels ? APP_NAME : APP_NAME.slice(0, 1)}</span>
+          </div>
+
+          {/* Nav */}
+          <nav className="no-scrollbar flex-1 space-y-0.5 overflow-y-auto px-2" aria-label="Navegação">
+            {MENU.filter((item) => !item.needs || access[item.needs]).map((item) => {
+              const active = !item.disabled && (isActive(item.href) || (item.match ?? []).some(isActive));
+              return (
+                <Link
+                  key={item.label}
+                  href={item.disabled ? "#" : item.href}
+                  title={!showLabels ? item.label : undefined}
+                  aria-disabled={item.disabled}
+                  className={clsx(
+                    "relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-white/15 font-semibold text-white shadow-[inset_3px_0_0_var(--color-tertiary-fixed)]"
+                      : "text-white/85 hover:bg-white/10 hover:text-white",
+                    item.disabled && "pointer-events-none opacity-40",
+                    !showLabels && "justify-center",
+                  )}
+                >
+                  <item.Icon
+                    className={clsx("h-4 w-4 shrink-0", active && "text-tertiary-fixed")}
+                    aria-hidden="true"
+                  />
+                  {showLabels && <span className="flex-1 truncate whitespace-nowrap">{item.label}</span>}
+                  {item.href === "/canais" && <UnreadBadge collapsed={!showLabels} />}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Usuário */}
+          <div className="border-t border-white/10 px-2 pt-2">
+            {user ? (
+              <div
+                className={clsx(
+                  "flex gap-2 rounded-md p-1.5",
+                  showLabels ? "items-center" : "flex-col items-center",
+                )}
+              >
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-tertiary-fixed text-[10px] font-black text-brand"
+                  title={user.email}
+                >
+                  {initials}
+                </div>
+                {showLabels ? (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold" title={user.email}>
+                        {displayName}
+                      </p>
+                      <p className="text-xs opacity-70">{user.internal ? "interno" : "externo"}</p>
+                    </div>
+                    <NotificationBell />
+                    <form action="/auth/signout" method="post">
+                      <button
+                        type="submit"
+                        aria-label="Sair"
+                        title="Sair"
+                        className="shrink-0 rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <NotificationBell />
+                )}
+              </div>
+            ) : (
+              showLabels && (
+                <Link
+                  href="/login"
+                  className="block rounded-md bg-white p-2 text-center text-xs font-bold text-brand hover:bg-white/90"
+                >
+                  Entrar
+                </Link>
+              )
+            )}
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}

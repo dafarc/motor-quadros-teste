@@ -1,0 +1,148 @@
+import type { Action } from "@motor/core";
+
+/**
+ * Tradução das permissões para a linguagem de quem administra o sistema.
+ *
+ * O identificador técnico ("card:move") não diz nada a quem precisa decidir o
+ * escopo de uma função. Cada entrada abaixo responde a uma pergunta prática:
+ * o que essa pessoa consegue fazer, e o que acontece se eu desmarcar isto.
+ */
+export interface ActionInfo {
+  action: Action;
+  label: string;
+  hint: string;
+}
+
+export interface ActionGroup {
+  title: string;
+  items: ActionInfo[];
+}
+
+export const ACTION_GROUPS: ActionGroup[] = [
+  {
+    title: "Quadros e cards",
+    items: [
+      { action: "board:read", label: "Ver quadros", hint: "Abrir os pipelines a que tem acesso." },
+      { action: "card:read", label: "Ver cards", hint: "Abrir e ler os cards." },
+      {
+        action: "card:read_all",
+        label: "Ver todos os cards do pipeline",
+        hint: "Marcado: vê todos os cards dos pipelines a que tem acesso. Desmarcado: vê só os cards dela (em que é responsável ou solicitante).",
+      },
+      { action: "card:create", label: "Criar cards", hint: "Abrir novas demandas e tarefas." },
+      { action: "card:update", label: "Editar cards", hint: "Alterar título, descrição e propriedades." },
+      { action: "card:move", label: "Mover entre etapas", hint: "Arrastar o card no Kanban." },
+      {
+        action: "card:transfer",
+        label: "Enviar cards para qualquer pipeline",
+        hint: "No botão “Enviar para outro pipeline”, permite escolher qualquer pipeline da organização. Sem isto, só aparecem os pipelines de que a pessoa participa ou que têm a caixa de entrada aberta para ela.",
+      },
+      { action: "card:assign", label: "Definir responsável", hint: "Atribuir cards a outras pessoas." },
+      { action: "comment:create", label: "Comentar", hint: "Escrever nos comentários e mencionar." },
+    ],
+  },
+  {
+    title: "Configuração dos pipelines",
+    items: [
+      {
+        action: "board:configure",
+        label: "Gerenciar pipelines",
+        hint: "Criar, renomear, arquivar e definir quem acessa cada pipeline.",
+      },
+      { action: "stage:manage", label: "Configurar etapas", hint: "Criar e reordenar as colunas." },
+      {
+        action: "field:manage",
+        label: "Configurar propriedades",
+        hint: "Criar e editar os campos dos cards.",
+      },
+      {
+        action: "workflow:manage",
+        label: "Configurar automações",
+        hint: "Regras que travam ou liberam a passagem entre etapas.",
+      },
+      {
+        action: "plan:manage",
+        label: "Editar planejamento de gastos",
+        hint: "Definir quanto se pretende gastar por mês em cada área.",
+      },
+    ],
+  },
+  {
+    title: "Conversas",
+    items: [
+      { action: "channel:read", label: "Ver conversas", hint: "Acessar os canais." },
+      { action: "channel:post", label: "Escrever nas conversas", hint: "Enviar mensagens." },
+      { action: "channel:manage", label: "Gerenciar canais", hint: "Criar e editar grupos." },
+    ],
+  },
+  {
+    title: "Novos alunos (anamneses)",
+    items: [
+      {
+        action: "novos:access",
+        label: "Acessar Novos alunos",
+        hint: "Agenda, agendamentos e relatórios das anamneses (perfil de atendimento/coordenação). Psicólogas entram pelo cadastro de Psicólogas.",
+      },
+      {
+        action: "novos:manage",
+        label: "Administrar Novos alunos",
+        hint: "Tudo do acesso, mais psicólogas, segmentos, configurações e auditoria da central.",
+      },
+    ],
+  },
+  {
+    title: "Módulos e administração",
+    items: [
+      {
+        action: "salas:manage",
+        label: "Acessar a Gestão de Vila",
+        hint: "Ver e editar a Gestão de Vila. Também pode ser liberado pessoa a pessoa, em Usuários → Acessos.",
+      },
+      {
+        action: "time:read",
+        label: "Ver o tempo da equipe",
+        hint: "Ver em que cada pessoa está trabalhando, os relatórios de horas por tarefa e baixar a planilha. Sem esta permissão, cada um vê só o próprio tempo.",
+      },
+      {
+        action: "report:read",
+        label: "Relatórios para assistentes de IA",
+        hint: "Gerar tokens pessoais para consultar o sistema por um assistente (somente leitura, só os pipelines que a pessoa enxerga).",
+      },
+      {
+        action: "user:manage",
+        label: "Gerenciar usuários e papéis",
+        hint: "Convidar pessoas, trocar papéis e editar permissões. É o acesso mais amplo do sistema.",
+      },
+    ],
+  },
+];
+
+/** Ações que caracterizam poder de gestão — vedadas a usuário externo. */
+export const ACOES_DE_GESTAO: Action[] = [
+  "user:manage",
+  "board:configure",
+  "role:manage",
+  // Consulta em lote por fora da tela: só para a equipe interna.
+  "report:read",
+  // Dados pessoais de famílias (LGPD): nunca para usuário externo.
+  "novos:access",
+  "novos:manage",
+];
+
+/**
+ * Papel administrativo: conceder um destes é conceder controle sobre o próprio
+ * controle de acesso. Por isso só o Gestor Master pode atribuí-lo — um Gestor
+ * comum, que administra usuários, não promove ninguém a Gestor.
+ */
+export function ehPapelAdministrativo(perms: Action[]): boolean {
+  return perms.includes("role:manage") || perms.includes("user:manage");
+}
+
+const LABELS = new Map(
+  ACTION_GROUPS.flatMap((g) => g.items).map((i) => [i.action, i.label] as const),
+);
+
+/** Nome amigável de uma permissão (cai no identificador se for desconhecida). */
+export function actionLabel(action: Action): string {
+  return LABELS.get(action) ?? action;
+}
