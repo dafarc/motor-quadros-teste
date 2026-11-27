@@ -60,11 +60,6 @@ export const ACTION_GROUPS: ActionGroup[] = [
         label: "Configurar automações",
         hint: "Regras que travam ou liberam a passagem entre etapas.",
       },
-      {
-        action: "plan:manage",
-        label: "Editar planejamento de gastos",
-        hint: "Definir quanto se pretende gastar por mês em cada área.",
-      },
     ],
   },
   {
