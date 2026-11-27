@@ -43,7 +43,6 @@ export async function loadBoard(boardId?: string): Promise<BoardData | null> {
     intake: string;
     my_tasks?: boolean | null;
     time_tracking?: boolean | null;
-    own_panel?: boolean | null;
   } | null = null;
   if (boardId) {
     const { data } = await db
@@ -81,7 +80,7 @@ export async function loadBoard(boardId?: string): Promise<BoardData | null> {
   }
   if (!board) return null;
 
-  const [stagesRes, cardsRes, fieldsRes, gateRes, prioRes] = await Promise.all([
+  const [stagesRes, cardsRes, fieldsRes] = await Promise.all([
     // `*`: `counts_rework` (0042) pode ainda não existir.
     db.from("stage").select("*").eq("board_id", board.id).order("position"),
     db
@@ -97,26 +96,7 @@ export async function loadBoard(boardId?: string): Promise<BoardData | null> {
       .or(`board_id.eq.${board.id},board_id.is.null`)
       .eq("show_on_card_face", true)
       .order("position"),
-    // Etapa de checkpoint da priorização — vem da regra, sem nome fixo no código.
-    db
-      .from("workflow_rule")
-      .select("requirement_config")
-      .eq("board_id", board.id)
-      .eq("requirement", "prioritized")
-      .eq("is_active", true),
-    db
-      .from("prioritization")
-      .select("card_id")
-      .eq("board_id", board.id)
-      .is("archived_at", null),
   ]);
-
-  const gatedStages = new Set(
-    (gateRes.data ?? [])
-      .map((r) => (r.requirement_config as { checkpointStageId?: string } | null)?.checkpointStageId)
-      .filter((id): id is string => !!id),
-  );
-  const prioritizedCards = new Set((prioRes.data ?? []).map((p) => p.card_id));
 
   const cardsRaw = cardsRes.data ?? [];
   const cardIds = cardsRaw.map((c) => c.id);
@@ -232,8 +212,6 @@ export async function loadBoard(boardId?: string): Promise<BoardData | null> {
       fields,
       checklist: checklistOf.get(c.id) ?? null,
       commentCount: commentsOf.get(c.id) ?? 0,
-      awaitingPrioritization: gatedStages.has(c.stage_id) && !prioritizedCards.has(c.id),
-      prioritized: prioritizedCards.has(c.id),
       ...(hasRework ? { reworkCount: reworkOf.get(c.id) ?? 0 } : {}),
     };
   });
@@ -248,8 +226,6 @@ export async function loadBoard(boardId?: string): Promise<BoardData | null> {
     members: [],
     myTasks: board.my_tasks === true,
     timeTracking: board.time_tracking === true,
-    ownPanel: board.own_panel === true,
-    gatedStageIds: [...gatedStages],
     loadedAt: Date.now(),
   };
 }

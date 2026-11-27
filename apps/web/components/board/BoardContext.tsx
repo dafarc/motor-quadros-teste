@@ -21,7 +21,6 @@ export interface BoardExtras {
   fields: FieldDef[];
   values: { cardId: string; value: FieldValueRaw }[];
   members: MemberOption[];
-  prioritizedCardIds: string[];
   templates: ChecklistTemplate[];
 }
 

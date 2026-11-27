@@ -2,16 +2,13 @@
 
 import clsx from "clsx";
 import {
-  BarChart3,
   ChevronLeft,
   ChevronRight,
   KanbanSquare,
   LayoutDashboard,
   LogOut,
   MessagesSquare,
-  School,
   Settings,
-  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,11 +32,7 @@ interface MenuItem {
 }
 
 /** O que a pessoa logada pode abrir (calculado no servidor, no layout). */
-export interface MenuAccess {
-  painel: boolean;
-  salas: boolean;
-  novos: boolean;
-}
+export type MenuAccess = Record<string, boolean>;
 
 const MENU: MenuItem[] = [
   { Icon: LayoutDashboard, label: "Início", href: "/" },
@@ -50,7 +43,7 @@ const MENU: MenuItem[] = [
 
 export function Sidebar({
   user,
-  access = { painel: true, salas: true, novos: true },
+  access = {},
 }: {
   user: { email: string; name?: string | null; internal: boolean } | null;
   access?: MenuAccess;

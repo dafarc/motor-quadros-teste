@@ -1,5 +1,4 @@
-import { CheckSquare, Clock, ListOrdered, MessageSquare, Undo2 } from "lucide-react";
-import Link from "next/link";
+import { CheckSquare, Clock, MessageSquare, Undo2 } from "lucide-react";
 
 import type { CardView } from "@/lib/board/types";
 
@@ -53,20 +52,6 @@ export function CardTile({ card }: { card: CardView }) {
       <p className="mt-1 text-[15px] font-bold leading-snug text-neutral-800">
         {card.title}
       </p>
-
-      {card.awaitingPrioritization && (
-        // stopPropagation: o card é arrastável; sem isso o clique vira drag.
-        <Link
-          href="/prioridades"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
-          title="Esta demanda precisa passar pela fila de priorização"
-        >
-          <ListOrdered className="h-3 w-3" />
-          Aguarda priorização
-        </Link>
-      )}
 
       {card.labels.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">

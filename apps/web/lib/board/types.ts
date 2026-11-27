@@ -45,10 +45,6 @@ export interface CardView {
   /** Itens de checklist concluídos / total (null = card sem checklist). */
   checklist?: { done: number; total: number } | null;
   commentCount?: number;
-  /** Está numa etapa cuja saída exige priorização (e ainda não foi priorizada). */
-  awaitingPrioritization?: boolean;
-  /** Já passou pela fila de priorização (para recalcular o selo ao mover). */
-  prioritized?: boolean;
   /** Card recém-criado, ainda sendo gravado no servidor (aparece na hora). */
   pending?: boolean;
   /** Quantas vezes o card foi devolvido para uma etapa de emenda. */
@@ -185,10 +181,6 @@ export interface BoardData {
   myTasks: boolean;
   /** Mostra o cronômetro de tempo por tarefa (opção do pipeline). */
   timeTracking: boolean;
-  /** Tem painel próprio em "Painéis" (opção do pipeline). */
-  ownPanel: boolean;
-  /** Etapas de checkpoint da priorização (cards nelas "aguardam priorização"). */
-  gatedStageIds: string[];
   /** Quando o servidor montou estes dados (ms) — para a tela saber se estão velhos. */
   loadedAt: number;
 }
@@ -341,7 +333,7 @@ export interface UserRow {
   cargo: string | null;
   /** Acesso revogado: mantém o histórico, mas não entra mais no sistema. */
   archived: boolean;
-  /** Acessos pontuais concedidos à pessoa ("salas", "novos"). */
+  /** Acessos pontuais concedidos à pessoa (nenhum definido no motor ainda). */
   grants: string[];
   /** Acessos que o PAPEL dela já dá (a caixa aparece marcada e travada). */
   roleGrants: string[];

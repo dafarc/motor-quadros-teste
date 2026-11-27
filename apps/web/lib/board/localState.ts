@@ -15,15 +15,6 @@ export function sortCards(cards: CardView[]): CardView[] {
   return [...cards].sort((a, b) => a.position - b.position || a.number - b.number);
 }
 
-/** Recalcula o selo "Aguarda priorização" depois de uma troca de etapa. */
-function withStage(card: CardView, stageId: string, gated: ReadonlySet<string>): CardView {
-  return {
-    ...card,
-    stageId,
-    awaitingPrioritization: gated.has(stageId) && !card.prioritized,
-  };
-}
-
 /**
  * Move o card para `toStageId`, na posição `placement` (sem ela: fim da
  * coluna). Usa o mesmo `placeInColumn` do servidor, então o resultado bate com
@@ -34,7 +25,6 @@ export function applyMove(
   cardId: string,
   toStageId: string,
   placement: Placement | undefined,
-  gated: ReadonlySet<string>,
 ): CardView[] {
   const moving = cards.find((c) => c.id === cardId);
   if (!moving) return cards;
@@ -53,7 +43,7 @@ export function applyMove(
   return sortCards(
     cards.map((c) => {
       const position = positions.get(c.id) ?? c.position;
-      if (c.id === cardId) return { ...withStage(c, toStageId, gated), position };
+      if (c.id === cardId) return { ...{ ...c, stageId: toStageId }, position };
       return position === c.position ? c : { ...c, position };
     }),
   );
@@ -81,7 +71,6 @@ export interface CardRow {
 export function applyCardRow(
   cards: CardView[],
   row: CardRow,
-  gated: ReadonlySet<string>,
 ): CardView[] | null {
   const current = cards.find((c) => c.id === row.id);
   if (!current) return null;
@@ -100,7 +89,8 @@ export function applyCardRow(
     cards.map((c) =>
       c.id === row.id
         ? {
-            ...withStage(c, row.stage_id, gated),
+            ...c,
+            stageId: row.stage_id,
             title: row.title,
             dueDate: row.due_date,
             position,
@@ -121,7 +111,6 @@ export function applyCardRow(
 export function cardFromRow(
   cards: CardView[],
   row: CardRow,
-  gated: ReadonlySet<string>,
 ): CardView | null {
   let requester: CardView["requester"] = null;
   if (row.requester_id) {
@@ -148,8 +137,6 @@ export function cardFromRow(
     fields: [],
     checklist: null,
     commentCount: 0,
-    awaitingPrioritization: gated.has(row.stage_id),
-    prioritized: false,
   };
 }
 

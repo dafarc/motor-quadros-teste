@@ -76,28 +76,8 @@ export const ACTION_GROUPS: ActionGroup[] = [
     ],
   },
   {
-    title: "Novos alunos (anamneses)",
-    items: [
-      {
-        action: "novos:access",
-        label: "Acessar Novos alunos",
-        hint: "Agenda, agendamentos e relatórios das anamneses (perfil de atendimento/coordenação). Psicólogas entram pelo cadastro de Psicólogas.",
-      },
-      {
-        action: "novos:manage",
-        label: "Administrar Novos alunos",
-        hint: "Tudo do acesso, mais psicólogas, segmentos, configurações e auditoria da central.",
-      },
-    ],
-  },
-  {
     title: "Módulos e administração",
     items: [
-      {
-        action: "salas:manage",
-        label: "Acessar a Gestão de Vila",
-        hint: "Ver e editar a Gestão de Vila. Também pode ser liberado pessoa a pessoa, em Usuários → Acessos.",
-      },
       {
         action: "time:read",
         label: "Ver o tempo da equipe",
@@ -124,9 +104,6 @@ export const ACOES_DE_GESTAO: Action[] = [
   "role:manage",
   // Consulta em lote por fora da tela: só para a equipe interna.
   "report:read",
-  // Dados pessoais de famílias (LGPD): nunca para usuário externo.
-  "novos:access",
-  "novos:manage",
 ];
 
 /**

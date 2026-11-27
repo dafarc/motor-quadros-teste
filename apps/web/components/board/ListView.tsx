@@ -71,7 +71,6 @@ export function ListView({
   const [members, setMembers] = useState<MemberOption[]>(extras.data?.members ?? []);
   const [adding, setAdding] = useState(false);
   const [configuring, setConfiguring] = useState(false);
-  const [prioritized, setPrioritized] = useState<Set<string>>(new Set(extras.data?.prioritizedCardIds ?? []));
   const [filters, setFilters] = useState<ListFilters>(EMPTY_FILTERS);
   // Largura das colunas: ajustável arrastando a borda do cabeçalho, lembrada
   // por pipeline neste navegador. As colunas não cabem? A tabela rola de lado.
@@ -134,7 +133,6 @@ export function ListView({
     setValues(
       Object.fromEntries(data.values.map((v) => [`${v.cardId}|${v.value.fieldId}`, v.value])),
     );
-    setPrioritized(new Set(data.prioritizedCardIds));
   }
 
   useEffect(() => {
@@ -527,11 +525,6 @@ export function ListView({
                   title="Abrir card"
                 >
                   {card.pending ? "…" : `#${card.number}`}
-                  {prioritized.has(card.id) && (
-                    <span className="ml-1 text-emerald-600" title="Priorizada">
-                      ★
-                    </span>
-                  )}
                 </td>
                 <td className="px-3 py-1.5 align-top">
                   <WrapText

@@ -19,10 +19,7 @@ import type { BoardSummary, RoleOption, UserRow } from "@/lib/board/types";
 import { CARGOS } from "@/lib/roles/cargos";
 
 /** Acessos pontuais que um Gestor concede por pessoa. */
-const ACCESS = [
-  { key: "salas", label: "Gestão de Vila" },
-  { key: "novos", label: "Novos alunos" },
-] as const;
+const ACCESS: readonly { key: string; label: string }[] = [];
 
 export function UsersTable({
   users,

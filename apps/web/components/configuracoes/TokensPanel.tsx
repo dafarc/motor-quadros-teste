@@ -106,7 +106,7 @@ export function TokensPanel({
           Um token pessoal permite que um assistente como o Claude responda perguntas sobre os
           pipelines: o que a equipe fez na semana, o que está atrasado, onde o fluxo trava. Ele só
           lê, nunca altera, e enxerga exatamente os pipelines que você enxerga. Gestão de Vila e
-          Novos alunos ficam de fora.
+          
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3">
           <div className="min-w-0 flex-1">

@@ -554,23 +554,20 @@ export async function loadListData(boardId: string): Promise<{
   fields: FieldDef[];
   values: { cardId: string; value: FieldValueRaw }[];
   members: MemberOption[];
-  prioritizedCardIds: string[];
   /** Modelos de checklist do pipeline (vazio antes da migration 0045). */
   templates: ChecklistTemplate[];
 }> {
   const db = await createClient(); // sessão → RLS
-  const [fields, values, members, prio, tpl] = await Promise.all([
+  const [fields, values, members, tpl] = await Promise.all([
     loadFields(boardId),
     loadFieldValuesByBoard(boardId),
     loadMembers(),
-    db.from("prioritization").select("card_id").eq("board_id", boardId).is("archived_at", null),
     db.from("checklist_template").select("id, name, items").eq("board_id", boardId).order("name"),
   ]);
   return {
     fields,
     values,
     members,
-    prioritizedCardIds: (prio.data ?? []).map((p) => p.card_id),
     templates: (tpl.data ?? []).map((t) => ({ id: t.id, name: t.name, items: (t.items ?? []) as string[] })),
   };
 }
@@ -866,18 +863,8 @@ export async function loadUsers(): Promise<UserRow[]> {
   ]);
   const grantsOf = new Map<string, string[]>();
   for (const g of grantsRes.data ?? []) grantsOf.set(g.user_id, [...(grantsOf.get(g.user_id) ?? []), g.key]);
-  const roleGrantsOf = new Map(
-    (rolesRes.data ?? []).map((r) => {
-      const perms = Array.isArray(r.permissions) ? (r.permissions as string[]) : [];
-      return [
-        r.id,
-        [
-          ...(perms.includes("salas:manage") ? ["salas"] : []),
-          ...(perms.includes("novos:access") || perms.includes("novos:manage") ? ["novos"] : []),
-        ],
-      ] as const;
-    }),
-  );
+  // Nenhum papel concede acesso pontual no motor (os módulos que usavam isso não vieram).
+  const roleGrantsOf = new Map<string, string[]>();
   const phoneOf = new Map((phonesRes.data ?? []).map((p) => [p.user_id, formatPhone(p.phone)]));
   const roleName = new Map((rolesRes.data ?? []).map((r) => [r.id, r.name]));
   const roleSeesAll = new Map(
@@ -1039,17 +1026,20 @@ export async function createUser(input: {
 }
 
 /**
- * Concede ou retira um acesso pontual ("salas" = Gestão de Vila; "novos" =
- * Novos alunos). Só quem gerencia usuários (Gestor e Gestor Master), e só para
+ * Concede ou retira um acesso pontual. Nenhuma chave está definida no motor
+ * ainda (as da origem eram de módulos que não vieram). Só quem gerencia usuários (Gestor e Gestor Master), e só para
  * a equipe interna da própria organização.
  */
+/** Chaves de acesso pontual aceitas. */
+const GRANT_KEYS: string[] = [];
+
 export async function setUserGrant(
   userId: string,
-  key: "salas" | "novos",
+  key: string,
   on: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const actor = await requireActor("user:manage");
-  if (key !== "salas" && key !== "novos") return { ok: false, error: "Acesso desconhecido." };
+  if (!GRANT_KEYS.includes(key)) return { ok: false, error: "Acesso desconhecido." };
   const db = createAdminClient();
   const org = actor.organizationId as string;
   const { data: user } = await db.from("app_user").select("organization_id, is_internal").eq("id", userId).maybeSingle();

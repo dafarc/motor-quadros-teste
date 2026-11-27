@@ -19,10 +19,7 @@ const DIRETOR_GERAL: string = CARGOS[0];
 type Db = ReturnType<typeof createAdminClient>;
 
 /** Acesso pontual (tabela `user_grant`) → permissão que ele concede. */
-const GRANT_ACTION: Record<string, Action> = {
-  salas: "salas:manage",
-  novos: "novos:access",
-};
+const GRANT_ACTION: Record<string, Action> = {};
 
 async function resolvePermissions(db: Db, userId: string): Promise<Set<Action>> {
   const { data: userRoles } = await db.from("user_role").select("role_id").eq("user_id", userId);

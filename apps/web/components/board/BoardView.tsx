@@ -134,11 +134,8 @@ export function BoardView({
     }
   }
 
-  const gated = useMemo(() => new Set(board.gatedStageIds), [board.gatedStageIds]);
   // Sempre o valor mais novo, para os avisos do Realtime (que vivem num efeito
   // montado uma vez só) não trabalharem com uma lista antiga.
-  const gatedRef = useRef(gated);
-  gatedRef.current = gated;
   const cardsRef = useRef(cards);
   cardsRef.current = cards;
 
@@ -211,17 +208,17 @@ export function BoardView({
             return;
           }
           const resolvable = known
-            ? applyCardRow(cardsRef.current, row, gatedRef.current) !== null
-            : cardFromRow(cardsRef.current, row, gatedRef.current) !== null;
+            ? applyCardRow(cardsRef.current, row) !== null
+            : cardFromRow(cardsRef.current, row) !== null;
           if (!resolvable) {
             refreshSoon();
             return;
           }
           setCards((prev) => {
             if (prev.some((c) => c.id === row.id)) {
-              return applyCardRow(prev, row, gatedRef.current) ?? prev;
+              return applyCardRow(prev, row) ?? prev;
             }
-            const created = cardFromRow(prev, row, gatedRef.current);
+            const created = cardFromRow(prev, row);
             return created ? sortCards([...prev, created]) : prev;
           });
         },
@@ -339,7 +336,7 @@ export function BoardView({
     if (cardId.startsWith("tmp-")) return; // ainda sendo gravado
     // Pela Lista, escolher a etapa em que o card já está não muda nada.
     if (!placement && cards.find((c) => c.id === cardId)?.stageId === toStageId) return;
-    setCards((prev) => applyMove(prev, cardId, toStageId, placement, gated));
+    setCards((prev) => applyMove(prev, cardId, toStageId, placement));
     moveCard(cardId, toStageId, placement)
       .then((res) => {
         if (!res.ok) {
@@ -444,8 +441,6 @@ export function BoardView({
                 number: data.number,
                 stageId: data.stageId,
                 pending: false,
-                awaitingPrioritization: gated.has(data.stageId),
-                prioritized: false,
               };
               return sortCards([...rest, real]);
             });
@@ -482,8 +477,6 @@ export function BoardView({
         fields: [],
         checklist: null,
         commentCount: 0,
-        awaitingPrioritization: gated.has(created.stageId),
-        prioritized: false,
       };
       // O aviso do Realtime pode ter chegado antes e já provocado uma recarga
       // com este card: nesse caso não duplica.
@@ -581,16 +574,6 @@ export function BoardView({
             >
               <User className="h-4 w-4" aria-hidden="true" /> Meus cards
             </button>
-          )}
-          {/* Fila de priorização: só existe no pipeline de demandas. */}
-          {board.creationForm === "custom:demandas" && (
-            <Link
-              href={`/prioridades?board=${board.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm text-neutral-600 hover:bg-neutral-50"
-              title="Fila de prioridade (RICE)"
-            >
-              <ListOrdered className="h-4 w-4" /> Prioridades
-            </Link>
           )}
           <button
             type="button"
@@ -706,7 +689,6 @@ export function BoardView({
           boardName={board.name}
           myTasks={board.myTasks}
           timeTracking={board.timeTracking}
-          ownPanel={board.ownPanel}
           onClose={() => setShowOptions(false)}
           onSaved={() => router.refresh()}
         />
